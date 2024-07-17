@@ -1,0 +1,34 @@
+[build-system]
+requires = [
+    "setuptools>=61.2",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "GravNet"
+description = "Python package to run CNN on Euclid data and handle Euclid data."
+authors = [
+    {name = "Romain Loustalet Palengat", email = "romain.loustalet@gmx.com"},
+]
+license = {text = "CC-BY-NC-4.0"}
+readme = "README.md"
+keywords = ["CNN", "deep learning", "gravitational", "lenses"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Creative Commons Attribution Non Commercial 4.0 International",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8.10"
+dynamic = ["version", "dependencies"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic.version]
+attr = "gravnet.__init__.__version__"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["REQUIREMENTS"]}
