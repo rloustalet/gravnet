@@ -35,7 +35,6 @@ class Detection():
             None
         """
         self.model = load_model(model)
-        self.model_config = self.model.get_config()
         self.tile = tile
         self.path = pathlib.Path(path)
         self.image = FitsData(tile, path, bands)
@@ -70,7 +69,7 @@ class Detection():
 
         print(len(self.image.objects))
         lenses = {}
-        input_shape = (None, 201, 201, 1)
+        input_shape = self.model.input_shape
         i = 0
         for object_id in track(self.image.objects.keys(),
                                description=f"Detecting lenses for tile {self.tile}"):
@@ -86,8 +85,9 @@ class Detection():
                                             'cert': str(result[0][0])}
 
                     if save_fits:
-                        self.image.save_fits(cutout[:, :, 0],
-                                             'lenses/cutout_'+str(object_id)+'.fits')
+                        self.image.save_fits(cutout[0, :, :, 0],
+                                             'lenses_' + str(self.tile) + '/cutout_'+
+                                             str(object_id)+'.fits')
         self.export_lenses(lenses)
         if draw_boxes:
             coords = []

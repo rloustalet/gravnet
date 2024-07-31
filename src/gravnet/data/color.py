@@ -2,7 +2,6 @@
 gravnet"""
 import numpy as np
 from astropy.visualization import ZScaleInterval, MinMaxInterval, LinearStretch, LogStretch
-import matplotlib.pyplot as plt
 from PIL import Image
 from gravnet.data.fits import FitsData
 
@@ -59,10 +58,8 @@ class ColorData(FitsData):
                 cutouts = {key: log(image) for key, image in cutouts.items()}
         cutouts = {key: (image - np.min(image)) / (np.max(image) - np.min(image)) for
            key, image in cutouts.items()}
-        red_channel = (cutouts['R'] * 0.33 + cutouts['I'] * 0.33 + cutouts['Z'] * 0.33) + 1
-        green_channel = cutouts['G'] + 1
-        blue_channel = cutouts['G'] + 1
-        color_image_array = np.stack([red_channel, green_channel, blue_channel], axis=-1)
+        channels = self.create_channels(cutouts)
+        color_image_array = np.stack([channels[0], channels[1], channels[2]], axis=-1)
         colorized_vis_image = cutouts['VIS'][..., np.newaxis] * (color_image_array) - 1
         colorized_vis_image = ((colorized_vis_image - np.min(colorized_vis_image)) /
                                 (np.max(colorized_vis_image) - np.min(colorized_vis_image)))
@@ -70,4 +67,52 @@ class ColorData(FitsData):
             Image.fromarray((colorized_vis_image *
                              255).astype(np.uint8)).save(
                 f'{coords[0]}_{coords[1]}_color.png', vertical_flip=True)
-    
+    def create_channels(self, cutouts):
+        """
+        Creates the channels for the color image.
+
+        Args:
+            cutouts (dict): The cutouts to create the channels from.
+
+        Returns:
+            None
+        """
+        red_channel = None
+        green_channel = None
+        blue_channel = None
+        if set(self.bands) == {'VIS', 'G', 'R', 'I', 'Z'}:
+            red_channel = (cutouts['I'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['G'] + 1
+            blue_channel = cutouts['G'] + 1
+        elif set(self.bands) == {'VIS', 'R', 'I', 'Z'}:
+            red_channel = (cutouts['I'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['R'] + 1
+            blue_channel = cutouts['R'] + 1
+        elif set(self.bands) == {'VIS', 'G', 'I', 'Z'}:
+            red_channel = (cutouts['I'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['G'] + 1
+            blue_channel = cutouts['G'] + 1
+        elif set(self.bands) == {'VIS', 'G', 'U', 'I', 'Z'}:
+            red_channel = (cutouts['I'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['G'] + 1
+            blue_channel = cutouts['U'] + 1
+        elif set(self.bands) == {'VIS', 'G', 'R', 'I', 'Z', 'U'}:
+            red_channel = (cutouts['I'] * 0.33 + cutouts['Z'] * 0.33 + cutouts['R'] * 0.33) + 1
+            green_channel = cutouts['G'] + 1
+            blue_channel = cutouts['U'] + 1
+        elif set(self.bands) == {'VIS', 'R', 'I', 'Z', 'U'}:
+            red_channel = (cutouts['I'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['R'] + 1
+            blue_channel = cutouts['U'] + 1
+        elif set(self.bands) == {'VIS', 'G', 'I', 'Z', 'U'}:
+            red_channel = (cutouts['I'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['G'] + 1
+            blue_channel = cutouts['U'] + 1
+        elif set(self.bands) == {'VIS', 'G', 'R', 'Z', 'U'}:
+            red_channel = (cutouts['R'] * 0.5 + cutouts['Z'] * 0.5) + 1
+            green_channel = cutouts['G'] + 1
+            blue_channel = cutouts['U'] + 1
+        else:
+            print('Impossible to create the colored image')
+            return None
+        return red_channel, green_channel, blue_channel

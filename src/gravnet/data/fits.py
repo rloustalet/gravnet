@@ -9,13 +9,13 @@ from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from astropy import units as u
 from astropy.table import Table
-import tensorflow as tf
 import numpy as np
 from gravnet.constants import CATALOG_PATTERN
 from gravnet.constants import IMAGE_PATTERN_G
 from gravnet.constants import IMAGE_PATTERN_R
 from gravnet.constants import IMAGE_PATTERN_I
 from gravnet.constants import IMAGE_PATTERN_Z
+from gravnet.constants import IMAGE_PATTERN_U
 from gravnet.constants import IMAGE_PATTERN_VIS
 from gravnet.constants import IMAGE_PATTERN_NISP_H
 from gravnet.constants import IMAGE_PATTERN_NISP_J
@@ -53,19 +53,21 @@ class FitsData():
         """
         self.tile = str(tile) if tile is not None else tile
         self.path = pathlib.Path(path)
-        self.bands = bands
-        self.catalog_paths = self.get_catalog_file()
+        self.bands = list(bands)
+        self.catalog_paths = self.get_catalog_files()
         self.images_paths = self.get_images_files()
         self.objects = self.get_objects()
 
-    def get_catalog_file(self):
+    def get_catalog_files(self):
         """
-        Finds and returns the name of the catalog file in the current
-        directory that matches the given tile identifier.
+        Finds and returns the name of the catalog files in the current directory
+        that matches the given tile identifier.
 
         Returns:
-            str: The name of the catalog file if found, None otherwise.
+            list: A list of pathlib.PurePath objects representing the catalog files.
+            None: If no catalog files are found.
         """
+
         pattern = re.compile('.*'+CATALOG_PATTERN+self.tile+'.*.fits')
         catalog_list = []
         for filename in os.listdir(pathlib.PurePath(self.path, 'CAT')):
@@ -92,7 +94,8 @@ class FitsData():
             'G': re.compile('.*'+IMAGE_PATTERN_G+self.tile+'.*.fits'),
             'R': re.compile('.*'+IMAGE_PATTERN_R+self.tile+'.*.fits'),
             'I': re.compile('.*'+IMAGE_PATTERN_I+self.tile+'.*.fits'),
-            'Z': re.compile('.*'+IMAGE_PATTERN_Z+self.tile+'.*.fits')
+            'Z': re.compile('.*'+IMAGE_PATTERN_Z+self.tile+'.*.fits'),
+            'U': re.compile('.*'+IMAGE_PATTERN_U+self.tile+'.*.fits')
         }
         files_path = {
             'VIS': '',
@@ -102,7 +105,8 @@ class FitsData():
             'G': '',
             'R': '',
             'I': '',
-            'Z': ''
+            'Z': '',
+            'U': ''
         }
         for band in self.bands:
             for filename in os.listdir(pathlib.PurePath(self.path, band)):
@@ -141,7 +145,8 @@ class FitsData():
 
     def get_cutouts(self, coords=(60, 60), size=(201, 201), normalize=True):
         """
-        Retrieves cutouts of the image data for specified bands and coordinates, and normalizes the data.
+        Retrieves cutouts of the image data for specified bands and coordinates,
+        and normalizes the data.
 
         Args:
             coords (tuple): The coordinates to center the cutout on. Defaults to (60, 60).
@@ -150,7 +155,8 @@ class FitsData():
 
         Returns:
             dict: A dictionary containing the cutout data for each band specified in `self.bands`.
-                The keys are the band names, and the values are the corresponding cutout data as numpy arrays.
+                The keys are the band names, and the values are the corresponding cutout data as
+                numpy arrays.
         """
         tensor_dict = {}
         for band in self.bands:
@@ -194,7 +200,7 @@ class FitsData():
         tensor = self.concatenate_bands(tensor_dict)
         if tensor.shape[-1] > 8:
             tensor = np.expand_dims(tensor, axis=-1)
-        tensor = tf.expand_dims(tensor, axis=0)
+        tensor = np.expand_dims(tensor, axis=0)
         return tensor
 
     def concatenate_bands(self, tensor_dict):
